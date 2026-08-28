@@ -13,12 +13,20 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates nginx \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 COPY --from=frontend /build/static ./static
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY start-chat-ui.sh /usr/local/bin/start-chat-ui
+
+RUN chmod +x /usr/local/bin/start-chat-ui
 
 EXPOSE 8080
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["/usr/local/bin/start-chat-ui"]

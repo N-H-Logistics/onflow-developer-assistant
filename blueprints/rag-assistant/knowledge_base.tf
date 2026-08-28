@@ -11,7 +11,7 @@ resource "digitalocean_gradientai_knowledge_base" "kb" {
 
   datasources {
     web_crawler_data_source {
-      base_url        = "https://developers.onflow.vn/"
+      base_url        = "https://developers.onflow.vn/api-docs/"
       crawling_option = "PATH"
     }
   }

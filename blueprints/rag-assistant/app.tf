@@ -9,7 +9,7 @@ resource "digitalocean_app" "chat_ui" {
     region = var.region
 
     domain {
-      name = "ai.onflow.vn"
+      name = "developers.onflow.vn"
       type = "PRIMARY"
     }
 

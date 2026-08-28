@@ -3,7 +3,7 @@
 This stack deploys a fully functional Retrieval-Augmented Generation (RAG) assistant for Onflow OMS API integration on DigitalOcean, including:
 
 - A **managed GenAI agent** with serverless inference for question answering.
-- A **Knowledge Base** (KBaaS) seeded from the complete [Onflow API documentation](https://developers.onflow.vn/).
+- A **Knowledge Base** (KBaaS) seeded from the complete [Onflow API documentation](https://developers.onflow.vn/api-docs/).
 - An **App Platform** service hosting a chat UI that proxies requests to the agent.
 - **Guardrails** for jailbreak detection, content moderation, and sensitive data protection.
 - A **DigitalOcean project** to group all provisioned resources.
@@ -123,7 +123,7 @@ Use the chat interface to ask questions. The assistant will search your knowledg
 - **Inference**: Serverless — no GPU instances to manage. The model is configurable via model presets when deployed through do-terraform.
 - **Embeddings**: Qwen3 0.6B is used by default for document embedding.
 - **Guardrails**: Jailbreak detection, content moderation, and sensitive data protection are attached post-creation via the DO API (terraform provider limitation).
-- **Knowledge source**: The initial web crawler indexes `https://developers.onflow.vn/`, including linked API, status, and webhook documentation.
+- **Knowledge source**: The initial web crawler indexes `https://developers.onflow.vn/api-docs/`, including linked API, status, and webhook documentation.
 - **KB indexing**: A `null_resource` provisioner waits up to 10 minutes for knowledge base indexing to complete before attaching it to the agent.
 - **Chat UI**: A Python FastAPI application deployed on App Platform. It discovers the agent endpoint and creates an API key at startup.
 - **Resource naming**: All resources are suffixed with a random 4-character string to avoid naming collisions.

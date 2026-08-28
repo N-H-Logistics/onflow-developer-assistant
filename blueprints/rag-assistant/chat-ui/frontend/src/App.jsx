@@ -84,13 +84,13 @@ function Header() {
       <span className="brand-name"><strong>Onflow</strong> Open API</span>
     </a>
     <nav className="main-nav" aria-label="Tài nguyên tích hợp Open API">
-      <a href="https://developers.onflow.vn/doc-611811" target="_blank" rel="noreferrer">Bắt đầu</a>
-      <a href="https://developers.onflow.vn/api-9196579" target="_blank" rel="noreferrer">API Reference</a>
-      <a href="https://developers.onflow.vn/doc-794649" target="_blank" rel="noreferrer">Webhooks</a>
+      <a href="/api-docs/doc-611811" target="_blank" rel="noreferrer">Bắt đầu</a>
+      <a href="/api-docs/api-9196579" target="_blank" rel="noreferrer">API Reference</a>
+      <a href="/api-docs/doc-794649" target="_blank" rel="noreferrer">Webhooks</a>
       <a className="active" href="#assistant">Trợ lý API <span className="nav-spark">✦</span></a>
     </nav>
     <div className="header-actions">
-      <a className="header-action system-toggle" href="https://developers.onflow.vn/" target="_blank" rel="noreferrer">
+      <a className="header-action system-toggle" href="/api-docs/" target="_blank" rel="noreferrer">
         Mở tài liệu <span aria-hidden="true">↗</span>
       </a>
     </div>
