@@ -118,7 +118,7 @@ function MobileNav({ apiDocsItems, enterpriseDocsItems, openMenu, setOpenMenu })
     </button>
     <div className="mobile-nav-menu" id="mobile-nav-menu" aria-hidden={!isOpen}>
       <section>
-        <strong>Tài liệu API</strong>
+        <strong>API Tiêu chuẩn</strong>
         {apiDocsItems.map(({ href, text }) =>
           <a href={href} target="_blank" rel="noreferrer" tabIndex={itemTabIndex}
             onClick={() => setOpenMenu(null)} key={href}>{text}</a>)}
@@ -174,7 +174,7 @@ function Header() {
       <span className="brand-name"><strong>Onflow</strong> Open API</span>
     </a>
     <nav className="main-nav" aria-label="Tài nguyên tích hợp Open API">
-      <NavDropdown id="api-docs-nav" label="Tài liệu API" items={apiDocsItems}
+      <NavDropdown id="api-docs-nav" label="API Tiêu chuẩn" items={apiDocsItems}
         openMenu={openMenu} setOpenMenu={setOpenMenu} />
       <NavDropdown id="enterprise-docs-nav" label="API Doanh nghiệp" items={enterpriseDocsItems}
         openMenu={openMenu} setOpenMenu={setOpenMenu} />
