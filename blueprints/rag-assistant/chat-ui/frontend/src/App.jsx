@@ -77,19 +77,60 @@ function Logo() {
   </svg>;
 }
 
+function NavDropdown({ label, items }) {
+  return <details className="nav-dropdown">
+    <summary>{label} <span className="nav-dropdown-caret" aria-hidden="true">▾</span></summary>
+    <div className="nav-dropdown-menu">
+      {items.map(({ href, text }) =>
+        <a href={href} target="_blank" rel="noreferrer" key={href}>{text}</a>)}
+    </div>
+  </details>;
+}
+
+function MobileNav({ apiDocsItems, enterpriseDocsItems }) {
+  return <details className="mobile-nav">
+    <summary>Menu <span aria-hidden="true">▾</span></summary>
+    <div className="mobile-nav-menu">
+      <section>
+        <strong>Tài liệu API</strong>
+        {apiDocsItems.map(({ href, text }) =>
+          <a href={href} target="_blank" rel="noreferrer" key={href}>{text}</a>)}
+      </section>
+      <section>
+        <strong>API Doanh nghiệp</strong>
+        {enterpriseDocsItems.map(({ href, text }) =>
+          <a href={href} target="_blank" rel="noreferrer" key={href}>{text}</a>)}
+      </section>
+      <a className="mobile-assistant-link" href="#assistant">Trợ lý API <span aria-hidden="true">✦</span></a>
+    </div>
+  </details>;
+}
+
 function Header() {
+  const apiDocsItems = [
+    { href: '/api-docs/', text: 'Tổng quan' },
+    { href: '/api-docs/doc-611811', text: 'Xác thực' },
+    { href: '/api-docs/api-9196579', text: 'Danh mục API' },
+    { href: '/api-docs/doc-794649', text: 'Webhook' },
+  ];
+  const enterpriseDocsItems = [
+    { href: '/enterprise-docs/', text: 'Tổng quan' },
+    { href: '/enterprise-docs/overall-logic-2048199m0', text: 'Hướng dẫn tích hợp' },
+    { href: '/enterprise-docs/getting-started-1945390m0', text: 'Xác thực' },
+    { href: '/enterprise-docs/get-warehouse-27265113e0', text: 'Danh mục API' },
+    { href: '/enterprise-docs/updated-shipment-status-31915094e0', text: 'Webhook' },
+  ];
   return <header id="top">
     <a className="brand" href="#top" aria-label="Onflow Open API">
       <span className="header-logo"><Logo /></span>
       <span className="brand-name"><strong>Onflow</strong> Open API</span>
     </a>
     <nav className="main-nav" aria-label="Tài nguyên tích hợp Open API">
-      <a href="/api-docs/doc-611811" target="_blank" rel="noreferrer">Bắt đầu</a>
-      <a href="/api-docs/api-9196579" target="_blank" rel="noreferrer">API Reference</a>
-      <a href="/api-docs/doc-794649" target="_blank" rel="noreferrer">Webhooks</a>
-      <a href="/enterprise-docs/" target="_blank" rel="noreferrer">API Doanh nghiệp</a>
+      <NavDropdown label="Tài liệu API" items={apiDocsItems} />
+      <NavDropdown label="API Doanh nghiệp" items={enterpriseDocsItems} />
       <a className="active" href="#assistant">Trợ lý API <span className="nav-spark">✦</span></a>
     </nav>
+    <MobileNav apiDocsItems={apiDocsItems} enterpriseDocsItems={enterpriseDocsItems} />
     <div className="header-actions">
       <a className="header-action system-toggle" href="/api-docs/" target="_blank" rel="noreferrer">
         Mở tài liệu <span aria-hidden="true">↗</span>
