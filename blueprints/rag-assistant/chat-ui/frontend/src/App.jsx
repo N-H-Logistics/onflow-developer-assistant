@@ -77,36 +77,66 @@ function Logo() {
   </svg>;
 }
 
-function NavDropdown({ label, items }) {
-  return <details className="nav-dropdown">
-    <summary>{label} <span className="nav-dropdown-caret" aria-hidden="true">▾</span></summary>
-    <div className="nav-dropdown-menu">
+function NavDropdown({ id, label, items, openMenu, setOpenMenu }) {
+  const isOpen = openMenu === id;
+  const close = () => setOpenMenu((current) => current === id ? null : current);
+  return <div className={`nav-dropdown ${isOpen ? 'is-open' : ''}`}
+    onMouseEnter={() => setOpenMenu(id)}
+    onMouseLeave={(event) => { if (!event.currentTarget.contains(document.activeElement)) close(); }}
+    onFocus={() => setOpenMenu(id)}
+    onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) close(); }}>
+    <button type="button" aria-expanded={isOpen} aria-controls={`${id}-menu`}
+      onClick={() => setOpenMenu(isOpen ? null : id)}
+      onKeyDown={(event) => {
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          setOpenMenu(id);
+          window.requestAnimationFrame(() => document.querySelector(`#${id}-menu a`)?.focus());
+        }
+      }}>
+      {label} <span className="nav-dropdown-caret" aria-hidden="true">▾</span>
+    </button>
+    <div className="nav-dropdown-menu" id={`${id}-menu`} aria-hidden={!isOpen}>
       {items.map(({ href, text }) =>
-        <a href={href} target="_blank" rel="noreferrer" key={href}>{text}</a>)}
+        <a href={href} target="_blank" rel="noreferrer" tabIndex={isOpen ? 0 : -1}
+          onClick={() => setOpenMenu(null)} key={href}>{text}</a>)}
     </div>
-  </details>;
+  </div>;
 }
 
-function MobileNav({ apiDocsItems, enterpriseDocsItems }) {
-  return <details className="mobile-nav">
-    <summary>Menu <span aria-hidden="true">▾</span></summary>
-    <div className="mobile-nav-menu">
+function MobileNav({ apiDocsItems, enterpriseDocsItems, openMenu, setOpenMenu }) {
+  const isOpen = openMenu === 'mobile';
+  const itemTabIndex = isOpen ? 0 : -1;
+  return <div className={`mobile-nav ${isOpen ? 'is-open' : ''}`}
+    onBlur={(event) => {
+      if (!event.currentTarget.contains(event.relatedTarget)) setOpenMenu(null);
+    }}>
+    <button type="button" aria-expanded={isOpen} aria-controls="mobile-nav-menu"
+      onClick={() => setOpenMenu(isOpen ? null : 'mobile')}>
+      Menu <span aria-hidden="true">▾</span>
+    </button>
+    <div className="mobile-nav-menu" id="mobile-nav-menu" aria-hidden={!isOpen}>
       <section>
         <strong>Tài liệu API</strong>
         {apiDocsItems.map(({ href, text }) =>
-          <a href={href} target="_blank" rel="noreferrer" key={href}>{text}</a>)}
+          <a href={href} target="_blank" rel="noreferrer" tabIndex={itemTabIndex}
+            onClick={() => setOpenMenu(null)} key={href}>{text}</a>)}
       </section>
       <section>
         <strong>API Doanh nghiệp</strong>
         {enterpriseDocsItems.map(({ href, text }) =>
-          <a href={href} target="_blank" rel="noreferrer" key={href}>{text}</a>)}
+          <a href={href} target="_blank" rel="noreferrer" tabIndex={itemTabIndex}
+            onClick={() => setOpenMenu(null)} key={href}>{text}</a>)}
       </section>
-      <a className="mobile-assistant-link" href="#assistant">Trợ lý API <span aria-hidden="true">✦</span></a>
+      <a className="mobile-assistant-link" href="#assistant" tabIndex={itemTabIndex}
+        onClick={() => setOpenMenu(null)}>Trợ lý API <span aria-hidden="true">✦</span></a>
     </div>
-  </details>;
+  </div>;
 }
 
 function Header() {
+  const [openMenu, setOpenMenu] = useState(null);
+  const headerRef = useRef(null);
   const apiDocsItems = [
     { href: '/api-docs/', text: 'Tổng quan' },
     { href: '/api-docs/doc-611811', text: 'Xác thực' },
@@ -120,17 +150,37 @@ function Header() {
     { href: '/enterprise-docs/get-warehouse-27265113e0', text: 'Danh mục API' },
     { href: '/enterprise-docs/updated-shipment-status-31915094e0', text: 'Webhook' },
   ];
-  return <header id="top">
+  useEffect(() => {
+    const closeOutside = (event) => {
+      if (!headerRef.current?.contains(event.target)) setOpenMenu(null);
+    };
+    const closeWithEscape = (event) => {
+      if (event.key !== 'Escape') return;
+      const trigger = headerRef.current?.querySelector('[aria-expanded="true"]');
+      trigger?.focus();
+      setOpenMenu(null);
+    };
+    document.addEventListener('pointerdown', closeOutside);
+    document.addEventListener('keydown', closeWithEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside);
+      document.removeEventListener('keydown', closeWithEscape);
+    };
+  }, []);
+  return <header id="top" ref={headerRef}>
     <a className="brand" href="#top" aria-label="Onflow Open API">
       <span className="header-logo"><Logo /></span>
       <span className="brand-name"><strong>Onflow</strong> Open API</span>
     </a>
     <nav className="main-nav" aria-label="Tài nguyên tích hợp Open API">
-      <NavDropdown label="Tài liệu API" items={apiDocsItems} />
-      <NavDropdown label="API Doanh nghiệp" items={enterpriseDocsItems} />
+      <NavDropdown id="api-docs-nav" label="Tài liệu API" items={apiDocsItems}
+        openMenu={openMenu} setOpenMenu={setOpenMenu} />
+      <NavDropdown id="enterprise-docs-nav" label="API Doanh nghiệp" items={enterpriseDocsItems}
+        openMenu={openMenu} setOpenMenu={setOpenMenu} />
       <a className="active" href="#assistant">Trợ lý API <span className="nav-spark">✦</span></a>
     </nav>
-    <MobileNav apiDocsItems={apiDocsItems} enterpriseDocsItems={enterpriseDocsItems} />
+    <MobileNav apiDocsItems={apiDocsItems} enterpriseDocsItems={enterpriseDocsItems}
+      openMenu={openMenu} setOpenMenu={setOpenMenu} />
     <div className="header-actions">
       <a className="header-action system-toggle" href="/api-docs/" target="_blank" rel="noreferrer">
         Mở tài liệu <span aria-hidden="true">↗</span>
