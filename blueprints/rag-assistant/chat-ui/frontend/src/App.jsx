@@ -87,6 +87,7 @@ function Header() {
       <a href="/api-docs/doc-611811" target="_blank" rel="noreferrer">Bắt đầu</a>
       <a href="/api-docs/api-9196579" target="_blank" rel="noreferrer">API Reference</a>
       <a href="/api-docs/doc-794649" target="_blank" rel="noreferrer">Webhooks</a>
+      <a href="/enterprise-docs/" target="_blank" rel="noreferrer">API Doanh nghiệp</a>
       <a className="active" href="#assistant">Trợ lý API <span className="nav-spark">✦</span></a>
     </nav>
     <div className="header-actions">
