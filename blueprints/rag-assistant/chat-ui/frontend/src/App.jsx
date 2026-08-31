@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { streamChat } from './api.js';
 import { renderFormattedAnswer } from './markdown.js';
 
@@ -94,7 +95,7 @@ function NavDropdown({ id, label, items, openMenu, setOpenMenu }) {
           window.requestAnimationFrame(() => document.querySelector(`#${id}-menu a`)?.focus());
         }
       }}>
-      {label} <span className="nav-dropdown-caret" aria-hidden="true">▾</span>
+      {label} <ChevronDown className="nav-dropdown-caret" size={15} strokeWidth={2} aria-hidden="true" />
     </button>
     <div className="nav-dropdown-menu" id={`${id}-menu`} aria-hidden={!isOpen}>
       {items.map(({ href, text }) =>
@@ -113,7 +114,7 @@ function MobileNav({ apiDocsItems, enterpriseDocsItems, openMenu, setOpenMenu })
     }}>
     <button type="button" aria-expanded={isOpen} aria-controls="mobile-nav-menu"
       onClick={() => setOpenMenu(isOpen ? null : 'mobile')}>
-      Menu <span aria-hidden="true">▾</span>
+      Menu <ChevronDown className="mobile-nav-caret" size={15} strokeWidth={2} aria-hidden="true" />
     </button>
     <div className="mobile-nav-menu" id="mobile-nav-menu" aria-hidden={!isOpen}>
       <section>

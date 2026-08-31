@@ -1383,7 +1383,7 @@ header {
 
 .nav-dropdown-caret {
   color: var(--muted);
-  font-size: 12px;
+  flex: 0 0 auto;
   transition: transform .16s ease;
 }
 
@@ -1732,6 +1732,12 @@ header {
     font-weight: 650;
   }
   .mobile-nav.is-open > button { background: var(--brand-soft); color: var(--brand); }
+  .mobile-nav-caret {
+    color: var(--muted);
+    flex: 0 0 auto;
+    transition: transform .16s ease;
+  }
+  .mobile-nav.is-open .mobile-nav-caret { transform: rotate(180deg); }
   .mobile-nav-menu {
     position: absolute;
     top: calc(100% + 7px);
