@@ -1,163 +1,293 @@
-# Welcome to the DigitalOcean RAG Assistant Terraform Stack!
+# Onflow Developer Assistant
 
-This stack deploys a fully functional Retrieval-Augmented Generation (RAG) assistant for Onflow OMS API integration on DigitalOcean, including:
+Blueprint này triển khai cổng tài liệu và trợ lý AI hỗ trợ tích hợp Onflow Open API trên DigitalOcean.
 
-- A **managed GenAI agent** with serverless inference for question answering.
-- A **Knowledge Base** (KBaaS) seeded from the complete [Onflow API documentation](https://developers.onflow.vn/api-docs/).
-- An **App Platform** service hosting a chat UI that proxies requests to the agent.
-- **Guardrails** for jailbreak detection, content moderation, and sensitive data protection.
-- A **DigitalOcean project** to group all provisioned resources.
+Sau khi triển khai, ứng dụng cung cấp:
 
-The agent, knowledge base, chat UI, and guardrails are wired together out of the box.
+- Trợ lý RAG trả lời bằng tiếng Việt dựa trên tài liệu Onflow.
+- Tài liệu **API Tiêu chuẩn** tại `/api-docs/`.
+- Tài liệu **API Doanh nghiệp** tại `/enterprise-docs/`.
+- Knowledge Base được khởi tạo từ `https://developers.onflow.vn/api-docs/`.
+- Guardrail tùy chọn cho jailbreak, kiểm duyệt nội dung và dữ liệu nhạy cảm.
+- Tích hợp Taiga tùy chọn để tra cứu và tạo issue.
 
-## How to use this blueprint?
+## Kiến trúc
 
-Learn [here](../../README.md#how-to-use-digitalocean-blueprints) how to use this blueprint.
-
-## Architecture
-
-```
-User  ──>  Chat UI (App Platform)
-               │
-               ▼
-         Managed Agent  ──>  Guardrails (jailbreak / content / PII)
-               │
-               ▼
-         Knowledge Base  ──>  Embedding Model (Qwen3 0.6B)
-               │
-               ▼
-       Serverless Inference (configurable model)
-               │
-               ▼
-           Response
+```text
+Người dùng
+    │
+    ▼
+developers.onflow.vn
+    │
+    ├── /                    → React UI → FastAPI → DigitalOcean GenAI Agent
+    ├── /api-docs/           → Apidog project 565199
+    └── /enterprise-docs/    → Apidog project 763179
+                                             │
+GenAI Agent ← Guardrails                     │
+    │                                        │
+    ▼                                        │
+Knowledge Base ← Onflow API documentation ───┘
 ```
 
-The query flow works as follows:
+Các thành phần chính:
 
-1. The user sends a message through the Chat UI.
-2. The App Platform service forwards the message to the managed agent's OpenAI-compatible endpoint.
-3. The agent runs the query through attached guardrails (jailbreak, content moderation, sensitive data).
-4. The agent retrieves relevant document chunks from the Knowledge Base using semantic search.
-5. Retrieved context is assembled into a prompt and sent to the serverless inference model.
-6. The response passes back through guardrails and is returned to the user.
+| Thành phần | Vai trò |
+|---|---|
+| DigitalOcean App Platform | Chạy Nginx, FastAPI và giao diện React |
+| DigitalOcean GenAI Agent | Sinh câu trả lời và cung cấp trích dẫn |
+| DigitalOcean Knowledge Base | Lập chỉ mục tài liệu Onflow để truy xuất ngữ cảnh |
+| Nginx | Phân tuyến Developer Portal và hai bộ tài liệu Apidog |
+| OpenSearch | Database được gắn với ứng dụng App Platform |
 
-## Getting started
+## Luồng xử lý câu hỏi
 
-After the stack is deployed, allow 2-3 minutes for the knowledge base to finish indexing its initial data source and for the App Platform build to complete.
+1. Người dùng gửi câu hỏi từ giao diện React.
+2. FastAPI chuyển nội dung và lịch sử hội thoại đến GenAI Agent qua streaming API.
+3. Agent truy xuất các đoạn liên quan trong Knowledge Base.
+4. Guardrail kiểm tra yêu cầu và phản hồi nếu đã được cấu hình.
+5. Câu trả lời được stream về trình duyệt.
 
-### 1. Access the Chat UI
+Ứng dụng không lưu lịch sử hội thoại ở server. Lịch sử gần nhất được giữ trong trình duyệt của người dùng.
 
-The chat UI URL is available in the Terraform outputs (`chat_ui_url`). Open it in your browser to see the assistant interface.
+## Yêu cầu
 
-### 2. Use the Onflow API knowledge base
+- Terraform tương thích với DigitalOcean provider `~> 2.81.0`.
+- DigitalOcean API token có quyền tạo và cập nhật tài nguyên.
+- UUID của embedding model.
+- UUID của inference model nếu tạo agent mới.
+- Quyền quản lý domain `developers.onflow.vn` trên DigitalOcean App Platform.
+- Cluster OpenSearch production có tên `genai-seahorse` trong tài khoản DigitalOcean. Blueprint hiện chỉ gắn cluster này vào App Platform, không tự tạo cluster.
+- Node.js 20 và Python 3.12 nếu chạy local.
 
-The knowledge base crawls the Onflow developer site, covering getting started, common errors, API references, status codes, and webhook contracts. After deployment, wait for its initial indexing to complete before asking questions.
+## Triển khai bằng Terraform
 
-Example questions:
+### 1. Tạo cấu hình
 
-- `Hướng dẫn xác thực và gọi API Onflow trên môi trường staging.`
-- `Tạo đơn B2C cần endpoint, header và các field bắt buộc nào?`
-- `So sánh quy trình tạo đơn B2C và B2B.`
-- `Viết ví dụ cURL lấy chi tiết shipment theo tracking_code.`
-- `Thiết kế consumer an toàn cho webhook cập nhật trạng thái đơn hàng.`
-- `Giải thích mã trạng thái shipment này và bước xử lý tiếp theo.`
+Tạo file `terraform.tfvars` trong `blueprints/rag-assistant/`:
 
-The assistant is instructed to preserve exact endpoint and field names, cite the source documentation, avoid inventing undocumented contracts, protect API keys, and recommend Staging before Production.
+```hcl
+do_token            = "dop_v1_your_token"
+model_uuid           = "your-inference-model-uuid"
+embedding_model_uuid = "your-embedding-model-uuid"
 
-To add internal runbooks or other documents alongside the Onflow API documentation:
+basename     = "onflow-developer-assistant"
+project_name = "Onflow Developer Assistant"
+region       = "sgp1"
 
-1. Go to the [DigitalOcean console](https://cloud.digitalocean.com/).
-2. Navigate to **GenAI Platform > Knowledge Bases**.
-3. Select the knowledge base created by this stack (named `<basename>-<suffix>-kb`).
-4. Add your documents — supported formats include web URLs, PDFs, and plain text.
-5. Wait for indexing to complete, then ask the assistant questions about the added content.
+# Repo/branch App Platform sẽ dùng để build chat UI.
+_app_source_repo   = "your-github-org/your-repository"
+_app_source_branch = "master"
+```
 
-### 3. Ask questions
+Không commit `terraform.tfvars` hoặc API token vào Git.
 
-Use the chat interface to ask questions. The assistant will search your knowledge base documents and provide grounded answers with citations when available.
+App Platform build trực tiếp từ `_app_source_repo` và `_app_source_branch`, không build từ checkout local đang chạy Terraform. Giá trị mặc định hiện là `digitalocean/marketplace-blueprints` và `master`; hãy đổi hai biến này khi triển khai từ fork hoặc branch khác.
 
-## Terraform variables
+### 2. Kiểm tra và triển khai
 
-| Variable | Default | Description |
-|---|---|---|
-| `do_token` | *(required)* | DigitalOcean API token |
-| `project_uuid` | `""` | Existing project UUID (leave empty to create a new project) |
-| `basename` | `rag-assistant` | Base name used to auto-generate resource names |
-| `project_name` | `""` | Display name for the project (defaults to `basename`) |
-| `region` | `nyc3` | DigitalOcean region for App Platform resources |
-| `default_model` | `nvidia-nemotron-3-super-120b` | Serverless inference model name |
-| `model_uuid` | *(required)* | UUID of the inference model (resolved by do-terraform) |
-| `embedding_model` | `qwen3-embedding-0.6b` | Embedding model name |
-| `embedding_model_uuid` | *(required)* | UUID of the embedding model (resolved by do-terraform) |
-| `app_instance_size` | `apps-s-1vcpu-1gb` | App Platform instance size slug |
-| `taiga_base_url` | `""` | Taiga API base URL, e.g. `https://api.taiga.io/api/v1`; empty disables Taiga integration |
-| `taiga_username` | `""` | Taiga username for API authentication |
-| `taiga_password` | `""` | Taiga password for API authentication |
-| `taiga_auth_token` | `""` | Optional Taiga auth token used instead of username/password |
-| `taiga_project_id` | `""` | Taiga project ID to search |
-| `taiga_project_slug` | `""` | Taiga project slug used when project ID is not set |
-| `agent_instruction` | *(see variables.tf)* | System instruction specialized for safe Onflow OMS API integration |
-| `agent_temperature` | `0` | Inference temperature (0 = deterministic) |
-| `agent_max_tokens` | `4096` | Maximum tokens in the agent response |
-| `agent_k` | `15` | Number of KB documents retrieved per query, tuned for the Onflow API corpus |
-| `guardrail_jailbreak_uuid` | `""` | UUID of the jailbreak detection guardrail |
-| `guardrail_content_mod_uuid` | `""` | UUID of the content moderation guardrail |
-| `guardrail_sensitive_data_uuid` | `""` | UUID of the sensitive data detection guardrail |
+```bash
+cd blueprints/rag-assistant
+terraform init
+terraform validate
+terraform plan
+terraform apply
+```
+
+Terraform kiểm tra trạng thái indexing mỗi 10 giây trong tối đa khoảng 10 phút, sau đó thử gắn Knowledge Base vào agent. Nếu indexing chưa hoàn tất hoặc bước gắn thất bại, kiểm tra log của `null_resource.agent_post_setup` và trạng thái Knowledge Base trên DigitalOcean.
+
+### 3. Xem kết quả
+
+```bash
+terraform output app_url
+terraform output agent_uuid
+terraform output knowledge_base_uuid
+```
+
+Các URL production chính:
+
+| Chức năng | URL |
+|---|---|
+| Trợ lý API | `https://developers.onflow.vn/` |
+| API Tiêu chuẩn | `https://developers.onflow.vn/api-docs/` |
+| API Doanh nghiệp | `https://developers.onflow.vn/enterprise-docs/` |
+| Health check | `https://developers.onflow.vn/health` |
+
+## Dùng agent có sẵn
+
+Để sử dụng một GenAI Agent hiện có thay vì tạo agent mới:
+
+```hcl
+existing_agent_uuid  = "your-agent-uuid"
+existing_agent_name  = "Onflow API Assistant"
+embedding_model_uuid = "your-embedding-model-uuid"
+```
+
+Blueprint vẫn tạo Knowledge Base và gắn Knowledge Base này vào agent đã chọn. `DO_API_TOKEN` phải có quyền đọc agent, tạo API key và quản lý Knowledge Base.
+
+## Các biến Terraform
+
+### Bắt buộc và tài nguyên chính
+
+| Biến | Mặc định | Mô tả |
+|---|---:|---|
+| `do_token` | Bắt buộc | DigitalOcean API token; được đánh dấu sensitive |
+| `embedding_model_uuid` | Bắt buộc | UUID của embedding model cho Knowledge Base |
+| `model_uuid` | `""` | UUID inference model; bắt buộc khi tạo agent mới |
+| `existing_agent_uuid` | `""` | UUID agent có sẵn; để trống để Terraform tạo agent mới |
+| `existing_agent_name` | `RAG Assistant` | Tên hiển thị của agent có sẵn |
+| `project_uuid` | `""` | Project hiện có; để trống để tạo project mới |
+| `basename` | `rag-assistant` | Tiền tố tên tài nguyên |
+| `project_name` | `""` | Tên project; mặc định dùng `basename` |
+| `region` | `nyc3` | Region của App Platform |
+| `app_instance_size` | `apps-s-1vcpu-1gb` | Kích thước instance App Platform |
+| `_app_source_repo` | `digitalocean/marketplace-blueprints` | GitHub repository App Platform dùng để build |
+| `_app_source_branch` | `master` | Git branch App Platform dùng để build |
+
+### Cấu hình agent
+
+| Biến | Mặc định | Mô tả |
+|---|---:|---|
+| `default_model` | `nvidia-nemotron-3-super-120b` | Tên model dùng để hiển thị/tham chiếu |
+| `embedding_model` | `qwen3-embedding-0.6b` | Tên embedding model dùng để hiển thị/tham chiếu |
+| `agent_instruction` | Xem `variables.tf` | System instruction của trợ lý |
+| `agent_temperature` | `0` | Độ ngẫu nhiên của phản hồi |
+| `agent_max_tokens` | `4096` | Số token tối đa của phản hồi |
+| `agent_k` | `15` | Số tài liệu được truy xuất cho mỗi câu hỏi |
+| `agent_retrieval_method` | `RETRIEVAL_METHOD_SUB_QUERIES` | Phương thức truy xuất Knowledge Base |
+
+### Guardrail tùy chọn
+
+| Biến | Mặc định | Mô tả |
+|---|---:|---|
+| `guardrail_jailbreak_uuid` | `""` | UUID guardrail phát hiện jailbreak |
+| `guardrail_content_mod_uuid` | `""` | UUID guardrail kiểm duyệt nội dung |
+| `guardrail_sensitive_data_uuid` | `""` | UUID guardrail phát hiện dữ liệu nhạy cảm |
+
+Để trống UUID nếu không sử dụng guardrail tương ứng.
+
+### Taiga tùy chọn
+
+| Biến | Mặc định | Mô tả |
+|---|---:|---|
+| `taiga_base_url` | `""` | API base URL, ví dụ `https://api.taiga.io/api/v1` |
+| `taiga_username` | `""` | Tên đăng nhập Taiga |
+| `taiga_password` | `""` | Mật khẩu Taiga; được đánh dấu sensitive |
+| `taiga_auth_token` | `""` | Token dùng thay username/password |
+| `taiga_project_id` | `""` | ID project cần tra cứu |
+| `taiga_project_slug` | `""` | Slug dùng khi không cấu hình project ID |
+
+Taiga chỉ sử dụng được khi có `taiga_base_url`, thông tin xác thực và một trong hai giá trị `taiga_project_id` hoặc `taiga_project_slug`.
 
 ## Terraform outputs
 
-| Output | Description |
+| Output | Mô tả |
 |---|---|
-| `chat_ui_url` | URL of the deployed chat UI application |
-| `agent_uuid` | UUID of the managed RAG agent |
-| `knowledge_base_uuid` | UUID of the knowledge base |
-| `project_id` | Project ID containing all resources |
+| `app_url` | URL ứng dụng App Platform |
+| `agent_uuid` | UUID của agent đang được sử dụng |
+| `knowledge_base_uuid` | UUID Knowledge Base |
+| `project_id` | DigitalOcean Project ID |
 | `app_platform_id` | App Platform resource ID |
-| `agent_id` | GenAI agent resource ID |
-| `knowledge_base_id` | Knowledge base resource ID |
+| `agent_id` | GenAI Agent resource ID |
+| `knowledge_base_id` | Knowledge Base resource ID |
 
-## Stack details
+## Chạy local
 
-- **GenAI region**: The agent and knowledge base are deployed to `tor1` (the only region currently supporting the GenAI platform).
-- **App Platform region**: Configurable via the `region` variable (default `nyc3`).
-- **Inference**: Serverless — no GPU instances to manage. The model is configurable via model presets when deployed through do-terraform.
-- **Embeddings**: Qwen3 0.6B is used by default for document embedding.
-- **Guardrails**: Jailbreak detection, content moderation, and sensitive data protection are attached post-creation via the DO API (terraform provider limitation).
-- **Knowledge source**: The initial web crawler indexes `https://developers.onflow.vn/api-docs/`, including linked API, status, and webhook documentation.
-- **KB indexing**: A `null_resource` provisioner waits up to 10 minutes for knowledge base indexing to complete before attaching it to the agent.
-- **Chat UI**: A Python FastAPI application deployed on App Platform. It discovers the agent endpoint and creates an API key at startup.
-- **Resource naming**: All resources are suffixed with a random 4-character string to avoid naming collisions.
+Chat UI gồm React/Vite ở frontend và FastAPI ở backend. Backend cần kết nối đến một GenAI Agent đã được deploy.
 
-## Chat UI
-
-The chat UI uses React + Vite for the browser application and FastAPI for the API proxy. It is located in `chat-ui/` and:
-
-- Serves a single-page web interface with a conversational chat layout.
-- Proxies messages to the managed agent's OpenAI-compatible chat completions endpoint.
-- Auto-discovers the agent's deployment URL and creates an API key on startup.
-- Maintains conversation history for multi-turn interactions.
-- Keeps the user experience focused on Onflow Open API authentication, endpoints, payloads, statuses, errors, and webhooks.
-
-### Local development
-
-To run the chat UI locally (requires a deployed agent):
+### Chạy backend
 
 ```bash
-cd chat-ui
-npm install
-npm run build
+cd blueprints/rag-assistant/chat-ui
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-export AGENT_UUID=<your-agent-uuid>
-export DO_API_TOKEN=<your-token>
-export AGENT_NAME="RAG Assistant"
+
+export AGENT_UUID="your-agent-uuid"
+export DO_API_TOKEN="dop_v1_your_token"
+export AGENT_NAME="Onflow API Assistant"
+
 uvicorn main:app --host 0.0.0.0 --port 8080
 ```
 
-For frontend hot reload, run `npm run dev` in a second terminal. Vite proxies `/api` requests to FastAPI on port 8080.
+Backend tự lấy deployment URL của agent và tạo một agent API key khi khởi động. Kiểm tra trạng thái bằng:
 
-## Security
+```bash
+curl http://localhost:8080/health
+```
 
-- The `do_token` variable is marked as sensitive and will not appear in Terraform plan output.
-- The agent API key is injected as a `SECRET` environment variable in App Platform.
-- Guardrails provide defense-in-depth against prompt injection, toxic content, and PII leakage.
-- The chat UI does not store conversation history server-side; all history is held in the browser session.
+### Chạy frontend với hot reload
+
+Mở terminal thứ hai:
+
+```bash
+cd blueprints/rag-assistant/chat-ui
+npm ci
+npm run dev
+```
+
+Vite sẽ proxy `/api` và `/health` sang FastAPI tại port `8080`.
+
+### Build frontend production
+
+```bash
+npm run build
+```
+
+File build được tạo trong `chat-ui/static/` và được FastAPI phục vụ tại `/static/`.
+
+Lưu ý: proxy Apidog trong `nginx.conf` chỉ hoạt động khi chạy container hoặc Nginx; Vite dev server không phục vụ `/api-docs/` và `/enterprise-docs/`.
+
+## Cấu trúc thư mục
+
+```text
+rag-assistant/
+├── agent.tf                 # Agent và bước gắn KB/guardrail
+├── app.tf                   # App Platform, domain và environment variables
+├── knowledge_base.tf        # Knowledge Base và nguồn crawler
+├── outputs.tf               # Terraform outputs
+├── projects.tf              # DigitalOcean Project
+├── provider.tf              # Provider DigitalOcean
+├── variables.tf             # Cấu hình blueprint
+└── chat-ui/
+    ├── chat_app/            # FastAPI routes và tích hợp dịch vụ
+    ├── frontend/            # React source
+    ├── static/              # Frontend production build
+    ├── nginx.conf           # Proxy portal và Apidog
+    ├── Dockerfile           # Multi-stage image
+    └── start-chat-ui.sh     # Chạy Uvicorn và Nginx
+```
+
+## Backend API
+
+Các endpoint dưới đây hiện đi qua route public của App Platform và **chưa có lớp xác thực riêng**. Đặc biệt, các thao tác tạo Taiga issue, upload tài liệu và xóa Knowledge Base data source sử dụng quyền của service token ở backend. Không mở các endpoint quản trị này cho người dùng không tin cậy; cần bổ sung authentication/authorization hoặc chặn ở gateway trước khi dùng trong production.
+
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| `GET` | `/health` | Trạng thái ứng dụng và agent |
+| `POST` | `/api/chat` | Chat không streaming |
+| `POST` | `/api/chat/stream` | Chat streaming |
+| `GET` | `/api/knowledge-bases` | Danh sách Knowledge Base |
+| `POST` | `/api/knowledge-bases/uploads/file` | Upload tài liệu vào Knowledge Base |
+| `DELETE` | `/api/knowledge-bases/{kb}/data-sources/{source}` | Xóa data source khỏi Knowledge Base |
+| `GET` | `/api/taiga/search` | Tìm kiếm dữ liệu Taiga |
+| `GET` | `/api/taiga/metadata` | Metadata project Taiga |
+| `POST` | `/api/taiga/issues` | Tạo Taiga issue |
+
+## Vận hành và xử lý lỗi
+
+- **Ứng dụng không khởi động:** xem App Platform/Uvicorn logs trước; agent discovery chạy lúc startup và sẽ dừng ứng dụng nếu `AGENT_UUID`, `DO_API_TOKEN`, deployment URL hoặc bước tạo agent API key không hợp lệ.
+- **Knowledge Base chưa trả kết quả:** đợi indexing hoàn tất và kiểm tra Knowledge Base đã được gắn vào agent.
+- **Tài liệu Apidog lỗi:** kiểm tra project ID và các route trong `chat-ui/nginx.conf`.
+- **Domain chưa hoạt động:** kiểm tra domain mapping và DNS của `developers.onflow.vn` trong App Platform.
+- **Taiga trả về 503:** bổ sung base URL, thông tin xác thực và project ID/slug.
+- **Upload thất bại:** kích thước mặc định tối đa là 25 MB; định dạng mặc định gồm PDF, TXT, Markdown, HTML, CSV và DOCX.
+
+## Bảo mật
+
+- Không đưa `do_token`, `DO_API_TOKEN`, mật khẩu Taiga hoặc agent API key vào Git và log.
+- Bảo vệ Terraform state vì state có thể chứa dữ liệu nhạy cảm; với môi trường dùng chung, nên dùng remote backend được mã hóa và kiểm soát truy cập.
+- App Platform lưu DigitalOcean token và thông tin xác thực Taiga dưới dạng secret.
+- Agent API key được tạo khi ứng dụng khởi động và chỉ giữ trong bộ nhớ tiến trình.
+- Các endpoint quản trị Knowledge Base và Taiga hiện chưa xác thực; phải giới hạn truy cập trước khi vận hành production.
+- Nên kiểm thử tích hợp Onflow trên Staging trước Production.
+- Guardrail là lớp bảo vệ bổ sung, không thay thế việc phân quyền, quản lý secret và xác thực input.
