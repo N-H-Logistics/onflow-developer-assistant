@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Code2, Package, Webhook, ArrowUpRight } from 'lucide-react';
 import onflowLogo from './assets/onflow-logo-white.png';
 import { streamChat } from './api.js';
 import { renderFormattedAnswer } from './markdown.js';
@@ -23,13 +23,16 @@ function createTypewriter(onUpdate) {
   let running = false;
   let finishResolver = null;
 
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const delayFor = (character) => {
+    if (reducedMotion) return 0;
     if ('.!?'.includes(character)) return 120;
     if (',;:'.includes(character)) return 65;
     if (character === '\n') return 80;
     return 12 + Math.floor(Math.random() * 12);
   };
   const batchSize = () => {
+    if (reducedMotion) return pending.length;
     if (pending.length > 600) return 14;
     if (pending.length > 240) return 8;
     if (pending.length > 80) return 4;
@@ -70,13 +73,6 @@ function createTypewriter(onUpdate) {
       });
     },
   };
-}
-
-function Logo() {
-  return <svg viewBox="0 0 512 512" aria-hidden="true">
-    <path d="M151 116c9-16 24-16 33 0l68 122c7 12 7 24 0 36l-68 122c-9 16-24 16-33 0L77 274c-7-12-7-24 0-36l74-122z"/>
-    <path d="M178 90h148c28 0 45 10 59 35l61 113c7 12 7 24 0 36l-61 113c-14 25-31 35-59 35H178c24-16 38-33 52-58l47-84c10-17 10-31 0-48l-47-84c-14-25-28-42-52-58z"/>
-  </svg>;
 }
 
 function NavDropdown({ id, label, items, openMenu, setOpenMenu }) {
@@ -171,14 +167,14 @@ function Header() {
   }, []);
   return <header id="top" ref={headerRef}>
     <a className="brand" href="#top" aria-label="Onflow">
-      <img className="onflow-logo" src={onflowLogo} alt="Onflow" />
+      <img className="onflow-logo" src={onflowLogo} alt="Onflow" width="1024" height="410" />
     </a>
     <nav className="main-nav" aria-label="Tài nguyên tích hợp Open API">
       <NavDropdown id="api-docs-nav" label="API Tiêu chuẩn" items={apiDocsItems}
         openMenu={openMenu} setOpenMenu={setOpenMenu} />
       <NavDropdown id="enterprise-docs-nav" label="API Doanh nghiệp" items={enterpriseDocsItems}
         openMenu={openMenu} setOpenMenu={setOpenMenu} />
-      <a className="active" href="#assistant">Trợ lý API <span className="nav-spark">✦</span></a>
+      <a className="active" href="#assistant" aria-current="page">Trợ lý API <span className="nav-spark" aria-hidden="true">✦</span></a>
     </nav>
     <MobileNav apiDocsItems={apiDocsItems} enterpriseDocsItems={enterpriseDocsItems}
       openMenu={openMenu} setOpenMenu={setOpenMenu} />
@@ -213,18 +209,18 @@ function Message({ message }) {
 
 function EmptyState({ onPrompt, disabled }) {
   const groups = [
-    ['Bắt đầu tích hợp',
+    ['Bắt đầu tích hợp', Code2,
       ['Hướng dẫn xác thực Onflow API trên môi trường staging', 'Giải thích cấu trúc response và các lỗi API thường gặp']],
-    ['Đơn hàng & vận chuyển',
+    ['Đơn hàng & vận chuyển', Package,
       ['Tạo đơn B2C cần endpoint và các field bắt buộc nào?', 'Viết ví dụ cURL lấy chi tiết shipment theo tracking_code']],
-    ['Webhook & trạng thái',
+    ['Webhook & trạng thái', Webhook,
       ['Thiết kế consumer an toàn cho webhook cập nhật đơn hàng', 'Giải thích các mã trạng thái shipment và bước xử lý tiếp theo']],
   ];
   return <div className="empty-state">
-    <div className="prompt-sections">{groups.map(([title, prompts]) => <section className="prompt-section" key={title}>
-      <h3>{title}</h3><div className="prompt-list">{prompts.map((prompt) =>
+    <div className="prompt-sections">{groups.map(([title, Icon, prompts]) => <section className="prompt-section" key={title}>
+      <h2><span className="prompt-category-icon"><Icon size={19} aria-hidden="true" /></span>{title}</h2><div className="prompt-list">{prompts.map((prompt) =>
         <button className="prompt-btn" disabled={disabled} key={prompt} onClick={() => onPrompt(prompt)}>
-          <span className="prompt-search" aria-hidden="true" />{prompt}
+          <span>{prompt}</span><ArrowUpRight className="prompt-arrow" size={17} aria-hidden="true" />
         </button>)}</div>
     </section>)}</div>
   </div>;
@@ -237,9 +233,9 @@ function SendIcon() {
 function Composer({ input, setInput, loading, send, inputRef, landing = false }) {
   return <div className={`input-area ${landing ? 'landing-composer' : ''} ${loading ? 'waiting' : ''}`}>
     <div className="composer-shell">
-      <textarea className="composer-input" ref={inputRef} rows="1" value={input} readOnly={loading} autoFocus
+      <textarea className="composer-input" ref={inputRef} rows="1" value={input} readOnly={loading} name="question" autoComplete="off"
         aria-label="Nhập câu hỏi về Onflow Open API"
-        placeholder={loading ? 'Đợi trợ lý trả lời xong...' : 'Hỏi về endpoint, payload, trạng thái hoặc webhook...'}
+        placeholder={loading ? 'Đợi trợ lý trả lời xong…' : 'Ví dụ: Làm sao tạo đơn hàng qua API?'}
         onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
             e.preventDefault(); send();
@@ -250,7 +246,7 @@ function Composer({ input, setInput, loading, send, inputRef, landing = false })
         {loading ? <span className="send-spinner" /> : <SendIcon />}
       </button>
     </div>
-    {!landing && <div className="input-hint">{loading ? 'Trợ lý API đang trả lời...' : 'Enter để gửi · Shift + Enter để xuống dòng'}</div>}
+    {!landing && <div className="input-hint">{loading ? 'Trợ lý API đang trả lời…' : 'Enter để gửi · Shift + Enter để xuống dòng'}</div>}
   </div>;
 }
 
@@ -328,11 +324,13 @@ export default function App() {
   };
 
   return <>
+    <a className="skip-link" href="#assistant">Đến nội dung chính</a>
     <Header />
-    <main id="assistant" className={`workspace ${messages.length ? 'chatting' : 'landing-mode'}`}>
+    <main id="assistant" tabIndex={-1} className={`workspace ${messages.length ? 'chatting' : 'landing-mode'}`}>
       <div className="chat-container" ref={chatRef}><div className="chat-inner">
         {messages.length === 0 ? <>
-          <div className="welcome-title"><span>✦</span><h1>Trợ lý tích hợp Onflow Open API</h1></div>
+          <div className="welcome-eyebrow">ONFLOW DEVELOPERS</div>
+          <div className="welcome-title"><h1>Trợ lý tích hợp Onflow Open API</h1></div>
           <p className="welcome-subtitle">Hỗ trợ tra cứu endpoint, payload, mã trạng thái, webhook và viết mã tích hợp dựa trên tài liệu Onflow.</p>
           <Composer landing input={input} setInput={setInput} loading={loading} send={send} inputRef={inputRef} />
           <EmptyState disabled={loading} onPrompt={send} />
