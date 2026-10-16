@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import onflowLogo from './assets/onflow-logo-white.png';
 import { streamChat } from './api.js';
 import { renderFormattedAnswer } from './markdown.js';
 
@@ -170,7 +171,7 @@ function Header() {
   }, []);
   return <header id="top" ref={headerRef}>
     <a className="brand" href="#top" aria-label="Onflow">
-      <img className="onflow-logo" src="https://onflow.vn/wp-content/mu-plugins/onflow-home/onflow-logo-white.png" alt="Onflow" />
+      <img className="onflow-logo" src={onflowLogo} alt="Onflow" />
     </a>
     <nav className="main-nav" aria-label="Tài nguyên tích hợp Open API">
       <NavDropdown id="api-docs-nav" label="API Tiêu chuẩn" items={apiDocsItems}

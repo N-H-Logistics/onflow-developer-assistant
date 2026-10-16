@@ -1288,6 +1288,7 @@
   --brand-dark: #ea580c;
   --brand-accent: #fb923c;
   --navy: #10243e;
+  --header-navy: #102f73;
   --navy-hover: #1d3b5e;
   --navy-soft: #edf2f8;
   --brand-soft: #fff7ed;
@@ -1306,10 +1307,12 @@ body {
 }
 
 header {
-  height: 72px;
+  height: 104px;
   padding: 0 40px;
-  gap: 30px;
-  border-bottom-color: var(--line);
+  gap: 44px;
+  background: var(--header-navy);
+  color: white;
+  border-bottom-color: rgba(255, 255, 255, .16);
   box-shadow: 0 2px 9px rgba(16, 36, 62, .06);
   position: relative;
   z-index: 50;
@@ -1325,16 +1328,15 @@ header {
 }
 
 .brand {
-  padding: 8px 14px;
-  border-radius: 9px;
-  background: var(--navy);
+  padding: 0;
+  background: transparent;
   flex-shrink: 0;
 }
 
 .onflow-logo {
   display: block;
-  width: 120px;
-  height: 32px;
+  width: 190px;
+  height: auto;
   object-fit: contain;
 }
 
@@ -1352,10 +1354,10 @@ header {
   align-items: center;
   gap: 8px;
   padding: 0 14px;
-  color: var(--navy);
+  color: white;
   text-decoration: none;
-  font-size: 14px;
-  font-weight: 550;
+  font-size: 16px;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -1387,7 +1389,7 @@ header {
 }
 
 .nav-dropdown-caret {
-  color: var(--muted);
+  color: currentColor;
   flex: 0 0 auto;
   transition: transform .16s ease;
 }
@@ -1453,7 +1455,7 @@ header {
   padding: 0 8px;
   border: 0;
   background: transparent;
-  color: var(--navy);
+  color: white;
   font: inherit;
   font-size: 14px;
   cursor: pointer;
@@ -1465,7 +1467,7 @@ header {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #777;
+  color: white;
 }
 
 .user-avatar {
@@ -1713,8 +1715,8 @@ header {
 
 @media (max-width: 720px) {
   header { height: 62px; padding: 0 14px; }
-  .brand { padding: 7px 11px; }
-  .onflow-logo { width: 105px; height: 28px; }
+  .brand { padding: 0; }
+  .onflow-logo { width: 125px; height: auto; }
   .main-nav, .header-actions { display: none; }
   .mobile-nav {
     position: relative;
@@ -1728,7 +1730,7 @@ header {
     align-items: center;
     gap: 7px;
     border-radius: 9px;
-    color: var(--navy);
+    color: white;
     cursor: pointer;
     border: 0;
     background: transparent;
@@ -1738,7 +1740,7 @@ header {
   }
   .mobile-nav.is-open > button { background: var(--brand-soft); color: var(--brand); }
   .mobile-nav-caret {
-    color: var(--muted);
+    color: currentColor;
     flex: 0 0 auto;
     transition: transform .16s ease;
   }
