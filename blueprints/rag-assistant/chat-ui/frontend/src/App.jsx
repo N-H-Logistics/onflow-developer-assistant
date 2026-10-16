@@ -169,9 +169,8 @@ function Header() {
     };
   }, []);
   return <header id="top" ref={headerRef}>
-    <a className="brand" href="#top" aria-label="Onflow Open API">
-      <span className="header-logo"><Logo /></span>
-      <span className="brand-name"><strong>Onflow</strong> Open API</span>
+    <a className="brand" href="#top" aria-label="Onflow">
+      <img className="onflow-logo" src="https://onflow.vn/wp-content/mu-plugins/onflow-home/onflow-logo-white.png" alt="Onflow" />
     </a>
     <nav className="main-nav" aria-label="Tài nguyên tích hợp Open API">
       <NavDropdown id="api-docs-nav" label="API Tiêu chuẩn" items={apiDocsItems}
