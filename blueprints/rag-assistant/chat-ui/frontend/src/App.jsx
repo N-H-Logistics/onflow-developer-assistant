@@ -329,7 +329,6 @@ export default function App() {
     <main id="assistant" tabIndex={-1} className={`workspace ${messages.length ? 'chatting' : 'landing-mode'}`}>
       <div className="chat-container" ref={chatRef}><div className="chat-inner">
         {messages.length === 0 ? <>
-          <div className="welcome-eyebrow">ONFLOW DEVELOPERS</div>
           <div className="welcome-title"><h1>Trợ lý tích hợp Onflow Open API</h1></div>
           <p className="welcome-subtitle">Hỗ trợ tra cứu endpoint, payload, mã trạng thái, webhook và viết mã tích hợp dựa trên tài liệu Onflow.</p>
           <Composer landing input={input} setInput={setInput} loading={loading} send={send} inputRef={inputRef} />
